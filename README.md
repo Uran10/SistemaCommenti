@@ -18,6 +18,26 @@ Il blog resta statico: JavaScript legge e invia commenti a un'API PHP, anche su 
 
 Il percorso pubblico dell'articolo identifica la discussione, incluso l'eventuale `baseurl`. Mantieni stabili i permalink; se li cambi, aggiorna `post_path` nel database. Il widget mostra gli ultimi 100 commenti approvati, dal più recente. Non richiede cookie né raccoglie email.
 
+## Conteggio dei commenti nell'indice
+
+Copia `jekyll/assets/comment-counts.js` nella cartella `assets` del blog.
+Nel template dell'indice, aggiungi il segnaposto dentro il ciclo esistente e
+carica lo script una sola volta, dopo il ciclo:
+
+```liquid
+{% for post in site.posts %}
+  <a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a>
+  <small data-comments-post="{{ post.url | relative_url | escape }}" hidden></small>
+{% endfor %}
+<script src="{{ '/assets/comment-counts.js' | relative_url }}"
+        data-api="{{ site.comments_api | escape }}" defer></script>
+```
+
+L'indice recupera i totali dei commenti approvati con una sola richiesta
+`GET ?view=counts`. I post senza commenti approvati mostrano «0 commenti».
+Continua a usare `comments.html` nel layout del singolo articolo per la lista
+e il modulo. Aggiorna anche `public/comments.php` sul server API.
+
 ## Moderazione
 
 La moderazione è attiva per impostazione predefinita. Gestisci i commenti con il tuo client MySQL o phpMyAdmin:

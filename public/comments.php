@@ -53,8 +53,9 @@ try {
         if (!is_array($input)) reply(400, ['error' => 'Richiesta non valida.']);
     }
     $path = $method === 'GET' ? ($_GET['post'] ?? '') : ($input['post'] ?? '');
+    $listCounts = $method === 'GET' && ($_GET['view'] ?? '') === 'counts';
     // Il client usa pathname: ID ASCII stabile, senza query string o frammenti.
-    if (!is_string($path) || !preg_match('~^/[A-Za-z0-9/_.%\-]{0,511}$~D', $path)) {
+    if (!$listCounts && (!is_string($path) || !preg_match('~^/[A-Za-z0-9/_.%\-]{0,511}$~D', $path))) {
         reply(422, ['error' => 'Percorso articolo non valido.']);
     }
     $db = new PDO($config['dsn'], $config['user'], $config['password'], [
@@ -62,6 +63,10 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
+    if ($listCounts) {
+        $query = $db->query("SELECT post_path, COUNT(*) FROM comments WHERE status = 'approved' GROUP BY post_path");
+        reply(200, ['counts' => (object) $query->fetchAll(PDO::FETCH_KEY_PAIR)]);
+    }
     if ($method === 'GET') {
         $query = $db->prepare("SELECT id, author, body, created_at FROM comments WHERE post_path = ? AND status = 'approved' ORDER BY id DESC LIMIT 100");
         $query->execute([$path]);
